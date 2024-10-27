@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:pos/screen/home.dart';
 import 'package:pos/screen/login.dart';
 import 'firebase_options.dart';
@@ -14,6 +15,7 @@ final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: ".env");
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
@@ -31,6 +33,7 @@ class _MyAppState extends State<MyApp> {
   List<ConnectivityResult> _connectionStatus = [ConnectivityResult.none];
   final Connectivity _connectivity = Connectivity();
   late StreamSubscription<List<ConnectivityResult>> _connectivitySubscription;
+  bool _wasOffline = false;
 
   @override
   void initState() {
@@ -77,12 +80,14 @@ class _MyAppState extends State<MyApp> {
         backgroundColor: Colors.red,
         duration: const Duration(days: 1),
       );
-    } else {
+      _wasOffline = true;
+    } else if (_wasOffline) {
       showFloatingSnackbar(
         message: "Back online",
         backgroundColor: Colors.green,
         duration: const Duration(seconds: 3),
       );
+      _wasOffline = false;
     }
 
     // ignore: avoid_print
