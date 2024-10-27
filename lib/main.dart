@@ -9,6 +9,9 @@ import 'package:pos/screen/home.dart';
 import 'package:pos/screen/login.dart';
 import 'firebase_options.dart';
 
+final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
+    GlobalKey<ScaffoldMessengerState>();
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
@@ -66,9 +69,21 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> _updateConnectionStatus(List<ConnectivityResult> result) async {
-    setState(() {
-      _connectionStatus = result;
-    });
+    _connectionStatus = result;
+
+    if (_connectionStatus.contains(ConnectivityResult.none)) {
+      showFloatingSnackbar(
+        message: "No internet connection",
+        backgroundColor: Colors.red,
+        duration: const Duration(days: 1),
+      );
+    } else {
+      showFloatingSnackbar(
+        message: "Back online",
+        backgroundColor: Colors.green,
+        duration: const Duration(seconds: 3),
+      );
+    }
 
     // ignore: avoid_print
     // print('Connectivity changed: $_connectionStatus');
@@ -77,6 +92,7 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      scaffoldMessengerKey: scaffoldMessengerKey,
       themeMode: ThemeMode.system,
       debugShowCheckedModeBanner: false,
       title: 'Flutter Demo',
@@ -89,16 +105,12 @@ class _MyAppState extends State<MyApp> {
           child: StreamBuilder(
             stream: FirebaseAuth.instance.authStateChanges(),
             builder: (context, snapshot) {
-              if (_connectionStatus.contains(ConnectivityResult.none)) {
-                return const Center(
-                  child: Text('No internet connection'),
-                );
-              }
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(
                   child: CircularProgressIndicator(),
                 );
               }
+
               if (snapshot.hasData) {
                 return const HomeScreen();
               }
@@ -109,4 +121,25 @@ class _MyAppState extends State<MyApp> {
       ),
     );
   }
+}
+
+void showFloatingSnackbar({
+  required String message,
+  required Color backgroundColor,
+  required Duration duration,
+}) {
+  scaffoldMessengerKey.currentState
+    ?..removeCurrentSnackBar() // Dismiss any previous snackbar
+    ..showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: const TextStyle(color: Colors.white),
+        ),
+        backgroundColor: backgroundColor,
+        duration: duration,
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(16.0),
+      ),
+    );
 }
